@@ -25,7 +25,7 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-one)
+(setq doom-theme 'gruvbox-dark-hard)
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
@@ -54,60 +54,76 @@
 
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
 
-(load-theme 'gruvbox-dark-hard t)
 (load! "lisp/hideshowvis.el")
 (load! "lisp/misc.el")
 (load! "lisp/transpose-frame.el")
 
+(map! :leader "f" nil) ;; C-c f
+(map! :leader "i" nil)
+(map! :g "C-x f" nil)
+(map! :g "M-o" nil)
+(map! :g "M-1" nil)
+(map! :g "M-2" nil)
+(map! :g "M-3" nil)
+(map! :g "M-4" nil)
 (map! :g "C-\\" 'other-window)
+(map! :g "M-m" 'ace-window)
 (map! :g "C-." 'comment-or-uncomment-region)
 (map! :g "M-SPC" 'cycle-spacing)
+(map! :g "C-c s g" 'search-google)
+(add-hook 'window-setup-hook #'doom/quickload-session) ; restore previous session
 
-(setq read-process-output-max (* 1024 1024)) ;; needed for LSP?
+(map! "M-1" #'+workspace/switch-to-0)
+(map! "M-2" #'+workspace/switch-to-1)
+(map! "M-3" #'+workspace/switch-right)
+
 (after! doom-modeline
   (doom-modeline-def-modeline 'main
     '(bar matches buffer-info remote-host buffer-position parrot selection-info)
-    '(misc-info minor-modes checker input-method buffer-encoding major-mode process vcs "  "))) ; <-- added padding here
+    '(misc-info minor-modes checker input-method buffer-encoding major-mode process vcs "  ")) ; <-- added padding here
+  (setq doom-modeline-persp-name t))
 
 (use-package magit
+  :defer t
   :bind
   ("C-x g" . magit)
   :config
   (setq magit-display-buffer-function 'magit-display-buffer-traditional))
 
-(use-package vterm
-  :bind ("C-t" . vterm))
-
 (use-package shell-pop
+  :defer t
   :config
   (custom-set-variables
    '(shell-pop-shell-type (quote ("vterm" "*vterm*" (lambda nil (vterm)))))
    '(shell-pop-window-height 20))
   :bind ("M-o s" . shell-pop))
 
-(use-package ivy
+(after! ivy
   :config
-  ;; (setq ivy-rich-mode -1)
   (setq ivy-use-selectable-prompt t))
 
 (use-package hideshowvis-minor-mode
-  :bind (("C-c h" . hs-toggle-hiding)))
-
-(use-package direnv
-  :config
-  (direnv-mode t))
+  :defer t
+  :bind (("M-o h l" . hs-hide-level)
+         ("M-o h h" . hs-toggle-hiding)
+         ("C-c h" . hs-toggle-hiding)))
 
 (use-package swiper
+  :defer t
   :bind (("C-s" . swiper)
         :map swiper-map
         ("C-r" . 'swiper-C-r)))
 
-(use-package counsel
-  :bind (("C-1" . counsel-projectile-switch-project)
-         ("C-2" . counsel-projectile)
-         ("C-c g" . counsel-rg)
-         ("C-x b" . counsel-switch-buffer)))
+(use-package! counsel-projectile
+  :bind
+  (("C-1" . 'counsel-projectile-switch-project)
+  ("C-2" . 'counsel-projectile)))
 
+(use-package! counsel
+  :bind
+  (( "C-3" . 'counsel-switch-buffer)
+  ( "C-x b" . 'counsel-switch-buffer)
+  ( "C-c g" . '+default/search-project)))
 
 (use-package ivy-posframe
   :after ivy
@@ -121,70 +137,86 @@
   (ivy-posframe-mode 1))
 
 
-(use-package treemacs
-  :ensure t
-  :defer t
-  :bind (("C-x f" . treemacs))
+(use-package! treemacs
+  :bind
+  ("C-c f" . 'treemacs)
   :config
-  (treemacs-follow-mode t)
-  :hook (treemacs-display-current-project-exclusively . projectile-after-switch-project-hook))
+  (setq treemacs-follow-mode t)
+  (setq treemacs-show-hidden-files -1)
+  (add-hook 'projectile-after-switch-project-hook 'treemacs-display-current-project-exclusively))
 
 
-(use-package winner-mode
-  :bind (("C-c u" . winner-undo)
-         ("C-c U" . winner-redo)))
+(after! winner
+   (global-set-key (kbd "C-c u") 'winner-undo)
+   (global-set-key (kbd "C-c U") 'winner-redo))
 
-(use-package lsp-mode
-   :ensure t
-   :init ((lsp-ui-doc-enable t)
-          (setq lsp-keymap-prefix "C-c l"))
-   :bind (("C-x e" . lsp-execute-code-action)
-          ("C-x j" . lsp-find-definition)
-          ("C-x p" . xref-pop-marker-stack)
-          ("C-x t" . lsp-goto-type-definition)
-          ("C-c d" . lsp-ui-doc-show)
-          ("C-c r" . lsp-rename))
-   :config
-   (use-package lsp-treemacs
-     :ensure t
-     :commands lsp-treemacs-errors-list)
-   (use-package company-lsp
-     :ensure t
-     :commands company-lsp)
-   (use-package lsp-ui
-     :ensure t
-     :custom (lsp-ui-flycheck-enable nil)
-     :custom (lsp-signature-mode nil)
-     :commands lsp-ui-mode
-     :config (add-hook 'lsp-mode-hook 'lsp-ui-mode))
-   :hook
-   ((java-mode . lsp-deferred)
-    (c++-mode . lsp-deferred)
-    (python-mode . lsp-deferred)
-    (c-mode . lsp-deferred)
-    (prog-mode . 'lsp-deferred)
-    (lsp-mode . lsp-enable-which-key-integration))
-   :commands (lsp lsp-deferred)
-  )
+(use-package iedit
+  :defer t
+  :bind
+  ("C-;" . iedit-mode))
+
+(after! flycheck
+  (setq flycheck-navigation-minimum-level 'error)
+  (add-to-list 'flycheck-check-syntax-automatically 'new-line))
+
+(use-package sphinx-doc
+  :bind (
+         :map python-mode-map
+         ("M-RET d" . 'sphinx-doc))
+  :hook
+  (python-mode . (lambda() (sphinx-doc-mode))))
+
+(use-package! vterm ;; fix https://github.com/akermu/emacs-libvterm/issues/367
+  :bind
+  ("M-o v" . 'vterm)
+  :config
+  (define-key vterm-copy-mode-map (kbd "M-w") #'vterm-copy-mode-done))
+
+(use-package lsp
+  :config
+  (setq lsp-ui-doc-enable t
+        lsp-log-io t
+        lsp-signature-auto-activate nil)
+  :hook
+    ((java-mode . lsp-deferred)
+     (c++-mode . lsp-deferred)
+     (python-mode . lsp-deferred)
+     (c-mode . lsp-deferred)
+     (prog-mode . 'lsp-deferred)
+     (lsp-mode . lsp-enable-which-key-integration))
+  :commands (lsp lsp-deferred)
+  :bind
+      (("<f8>" . lsp)
+      ("M-RET e" . lsp-execute-code-action)
+      ("C-x f" . lsp-treemacs-references)
+      ("C-x j" . lsp-find-definition)
+      ("C-x p" . xref-pop-marker-stack)
+      ("C-x t" . lsp-goto-type-definition)
+      ("C-c i" . lsp-ui-doc-show)
+      ("M-RET f" . lsp-ui-doc-focus-frame)
+      ("M-RET u" . lsp-ui-doc-unfocus-frame)
+      ("M-RET r" . lsp-rename)
+      ("M-RET n" . flycheck-next-error)
+      ("M-RET p" . flycheck-previous-error)))
+
+(after! lsp-ui
+  (setq lsp-ui-doc-max-height 150
+        lsp-ui-doc-max-width 400) )
+
+(use-package! auto-dim-other-buffers
+  :init (auto-dim-other-buffers-mode t)
+  :config
+  (setq auto-dim-other-buffers-dim-on-focus-out nil
+        auto-dim-other-buffers-dim-on-switch-to-minibuffer t))
 
 (use-package guru-mode
-  :config
+  :init
   (guru-global-mode t))
 
+(setq my-custom-var "DEI WHY DA")
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(custom-safe-themes
-   '("a06658a45f043cd95549d6845454ad1c1d6e24a99271676ae56157619952394a" default))
- '(package-selected-packages '(lsp-ui company-lsp lsp-treemacs lsp-mode vterm treemacs))
- '(safe-local-variable-values
-   '((pyvenv-workon . "riskyclickerbot")
-     (pyvenv-workon . "py3_ssm"))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+ '(safe-local-variable-values '((pyvenv-workon . "py3_ssm"))))

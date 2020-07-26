@@ -26,3 +26,28 @@ If the input is empty, select the previous history element instead."
     (if (string= ivy-text "")
         (ivy-previous-history-element 1)
       (ivy-previous-line arg)))
+
+
+;; Google thing at point or highlighted region.
+(defun search-google(start end)
+  (interactive "r")
+  (if (use-region-p)
+      (browse-url
+       (concat "https://www.google.com/search?q=" (buffer-substring start end)))
+    (browse-url
+     (concat "https://www.google.com/search?q=" (thing-at-point 'symbol)))))
+
+;; Balance windows when splitting right/below
+(defadvice split-window-right (after rebalance-windows activate)
+  (balance-windows))
+(ad-activate 'split-window-right)
+(defadvice split-window-below (after rebalance-windows activate)
+  (balance-windows))
+(ad-activate 'split-window-below)
+
+
+;; fix https://github.com/DarthFennec/highlight-indent-guides/issues/82
+(defadvice insert-for-yank (before my-clear-indent-guides activate)
+  (remove-text-properties
+   0 (length (ad-get-arg 0))
+   '(display highlight-indent-guides-prop) (ad-get-arg 0)))
