@@ -83,6 +83,12 @@
     '(misc-info minor-modes checker input-method buffer-encoding major-mode process vcs "  ")) ; <-- added padding here
   (setq doom-modeline-persp-name t))
 
+;; fix tramp bug?
+(use-package recentf
+  :init
+  (setq recentf-auto-cleanup 'never) ;; disable before we start recentf!
+  (recentf-mode 1))
+
 (use-package magit
   :defer t
   :bind
@@ -122,8 +128,9 @@
 (use-package! counsel
   :bind
   (( "C-3" . 'counsel-switch-buffer)
-  ( "C-x b" . 'counsel-switch-buffer)
-  ( "C-c g" . '+default/search-project)))
+   ( "C-x b" . 'counsel-switch-buffer)
+   ( "C-c g" . '+default/search-project)
+   ( "M-RET c" . 'counsel-compile)))
 
 (use-package ivy-posframe
   :after ivy
@@ -141,7 +148,7 @@
   :bind
   ("C-c f" . 'treemacs)
   :config
-  (setq treemacs-follow-mode t)
+  (treemacs-follow-mode t)
   (setq treemacs-show-hidden-files -1)
   (add-hook 'projectile-after-switch-project-hook 'treemacs-display-current-project-exclusively))
 
@@ -159,32 +166,21 @@
   (setq flycheck-navigation-minimum-level 'error)
   (add-to-list 'flycheck-check-syntax-automatically 'new-line))
 
-(use-package sphinx-doc
-  :bind (
-         :map python-mode-map
-         ("M-RET d" . 'sphinx-doc))
-  :hook
-  (python-mode . (lambda() (sphinx-doc-mode))))
 
 (use-package! vterm ;; fix https://github.com/akermu/emacs-libvterm/issues/367
-  :bind
-  ("M-o v" . 'vterm)
   :config
-  (define-key vterm-copy-mode-map (kbd "M-w") #'vterm-copy-mode-done))
+  (doom-modeline-mode t)
+  (setq vterm-keymap-exceptions '("M-m" "C-c" "C-x" "C-u" "C-g" "C-h" "C-l" "M-x" "M-o" "C-v" "M-v" "C-y" "M-y"))
+  :bind
+  (("M-o v" . 'vterm)
+   :map vterm-copy-mode-map
+   ("M-w" . 'vterm-copy-mode-done)))
 
-(use-package lsp
+(use-package! lsp
   :config
   (setq lsp-ui-doc-enable t
         lsp-log-io t
         lsp-signature-auto-activate nil)
-  :hook
-    ((java-mode . lsp-deferred)
-     (c++-mode . lsp-deferred)
-     (python-mode . lsp-deferred)
-     (c-mode . lsp-deferred)
-     (prog-mode . 'lsp-deferred)
-     (lsp-mode . lsp-enable-which-key-integration))
-  :commands (lsp lsp-deferred)
   :bind
       (("<f8>" . lsp)
       ("M-RET e" . lsp-execute-code-action)
@@ -202,6 +198,10 @@
 (after! lsp-ui
   (setq lsp-ui-doc-max-height 150
         lsp-ui-doc-max-width 400) )
+
+(after! lsp-python-ms
+  (sphinx-doc-mode t)
+  (define-key python-mode-map (kbd "M-RET d") 'sphinx-doc))
 
 (use-package! auto-dim-other-buffers
   :init (auto-dim-other-buffers-mode t)

@@ -62,4 +62,5 @@
 (package! sphinx-doc)
 (package! auto-dim-other-buffers)
 (package! ivy-rich :disable t)
+(package! lsp-python-ms :pin "d42ffc2cc27ce36b5a7646ea922441f4c93b2678")
 (package! iedit)
