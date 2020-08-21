@@ -7,7 +7,7 @@
 ;; Some functionality uses this to identify you, e.g. GPG configuration, email
 ;; clients, file templates and snippets.
 (setq user-full-name "Sreenivas Venkobarao"
-      user-mail-address "sreenivasvrao1@gmail.com")
+      user-mail-address "venkobas@amazon.com")
 
 ;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
 ;; are the three important ones:
@@ -19,8 +19,8 @@
 ;;
 ;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
 ;; font string. You generally only need these two:
-;; (setq doom-font (font-spec :family "monospace" :size 12 :weight 'semi-light)
-;;       doom-variable-pitch-font (font-spec :family "sans" :size 13))
+;; (setq doom-font (font-spec :family "monospace" :size 14 :weight 'semi-light)
+;;      doom-variable-pitch-font (font-spec :family "sans" :size 15))
 
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
@@ -58,27 +58,36 @@
 (load! "lisp/misc.el")
 (load! "lisp/transpose-frame.el")
 
-(map! :leader "f" nil) ;; C-c f
-(map! :leader "i" nil)
 
-(map! :g "M-o" nil)
-(map! :g "M-1" nil)
-(map! :g "M-2" nil)
-(map! :g "M-3" nil)
-(map! :g "M-4" nil)
-(map! [remap other-window] nil)
+(map! :leader "f" nil
+      :leader "i" nil
+      :leader "s i" nil)
 
-(map! :g "M-q" 'backward-paragraph)
-(map! :g "M-e" 'forward-paragraph)
-(map! :g "M-m" 'ace-window)
-(map! :g "C-." 'comment-or-uncomment-region)
-(map! :g "M-SPC" 'cycle-spacing)
-(map! :g "C-c s g" 'search-google)
+(map!
+        :g "C-x f" nil
+        :g "M-o" nil
+        :g "M-1" nil
+        :g "M-2" nil
+        :g "M-3" nil
+        :g "M-4" nil
+        [remap other-window] nil)
+
+(map!
+      :g "M-q" 'backward-paragraph
+      :g "M-e" 'forward-paragraph
+      :g "M-SPC" 'cycle-spacing
+      :g "M-m" 'ace-window
+      :g "C-." 'comment-or-uncomment-region
+      :g "C-\\" 'other-window
+      :leader "s i" 'search-amz-internal
+      :leader "s g" 'search-google
+      "M-1" #'+workspace/switch-to-0
+      "M-2" #'+workspace/switch-to-1
+      "M-3" #'+workspace/switch-right)
+
+
 (add-hook 'window-setup-hook #'doom/quickload-session) ; restore previous session
 
-(map! "M-1" #'+workspace/switch-to-0)
-(map! "M-2" #'+workspace/switch-to-1)
-(map! "M-3" #'+workspace/switch-right)
 
 (after! doom-modeline
   (doom-modeline-def-modeline 'main
