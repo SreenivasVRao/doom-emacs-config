@@ -60,13 +60,16 @@
 
 (map! :leader "f" nil) ;; C-c f
 (map! :leader "i" nil)
-(map! :g "C-x f" nil)
+
 (map! :g "M-o" nil)
 (map! :g "M-1" nil)
 (map! :g "M-2" nil)
 (map! :g "M-3" nil)
 (map! :g "M-4" nil)
-(map! :g "C-\\" 'other-window)
+(map! [remap other-window] nil)
+
+(map! :g "M-q" 'backward-paragraph)
+(map! :g "M-e" 'forward-paragraph)
 (map! :g "M-m" 'ace-window)
 (map! :g "C-." 'comment-or-uncomment-region)
 (map! :g "M-SPC" 'cycle-spacing)
@@ -103,6 +106,11 @@
    '(shell-pop-shell-type (quote ("vterm" "*vterm*" (lambda nil (vterm)))))
    '(shell-pop-window-height 20))
   :bind ("M-o s" . shell-pop))
+
+(use-package! ace-window
+  :bind
+  ("C-\\" . 'other-window)
+  ("M-m" . 'ace-window))
 
 (after! ivy
   :config
@@ -163,16 +171,18 @@
   ("C-;" . iedit-mode))
 
 (after! flycheck
+  (setq-default flycheck-flake8-maximum-line-length 99); 80 char rule is for noobs
   (setq flycheck-navigation-minimum-level 'error)
-  (add-to-list 'flycheck-check-syntax-automatically 'new-line))
+  ;; (add-to-list 'flycheck-check-syntax-automatically 'new-line)
+  )
 
 
 (use-package! vterm ;; fix https://github.com/akermu/emacs-libvterm/issues/367
-  :config
-  (doom-modeline-mode t)
-  (setq vterm-keymap-exceptions '("M-m" "C-c" "C-x" "C-u" "C-g" "C-h" "C-l" "M-x" "M-o" "C-v" "M-v" "C-y" "M-y"))
   :bind
   (("M-o v" . 'vterm)
+   :map vterm-mode-map
+   (("M-m" . nil)
+   ("C-\\" . nil))
    :map vterm-copy-mode-map
    ("M-w" . 'vterm-copy-mode-done)))
 
@@ -192,6 +202,8 @@
       ("M-RET f" . lsp-ui-doc-focus-frame)
       ("M-RET u" . lsp-ui-doc-unfocus-frame)
       ("M-RET r" . lsp-rename)
+      ("M-RET b" . #'+format/buffer)
+      ("M-RET h" . 'lsp-toggle-symbol-highlight)
       ("M-RET n" . flycheck-next-error)
       ("M-RET p" . flycheck-previous-error)))
 
@@ -199,9 +211,18 @@
   (setq lsp-ui-doc-max-height 150
         lsp-ui-doc-max-width 400) )
 
-(after! lsp-python-ms
-  (sphinx-doc-mode t)
-  (define-key python-mode-map (kbd "M-RET d") 'sphinx-doc))
+;; (after! lsp-python-ms
+;;   (sphinx-doc-mode t)
+;;   (define-key python-mode-map (kbd "M-RET d") 'sphinx-doc)
+;;   (when (executable-find "ipython")
+;;     (setq python-shell-interpreter "ipython"))
+;;   )
+
+(after! persp-mode
+  (add-hook! 'persp-filter-save-buffers-functions
+    (defun is-remote-buffer-p (b)
+      (let ((dir (buffer-local-value 'default-directory b)))
+        (ignore-errors (file-remote-p dir))))))
 
 (use-package! auto-dim-other-buffers
   :init (auto-dim-other-buffers-mode t)
@@ -213,7 +234,8 @@
   :init
   (guru-global-mode t))
 
-(setq my-custom-var "DEI WHY DA")
+(setenv "WORKON_HOME" "/home/sreenivas/anaconda/envs")
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
