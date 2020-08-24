@@ -59,31 +59,34 @@
 (load! "lisp/transpose-frame.el")
 
 
-(map! :leader "f" nil
-      :leader "i" nil
-      :leader "s i" nil)
+(map!
+ :leader
+ "f" nil
+ "i" nil
+ "s i" nil
+ :g
+ "C-x f" nil
+ "M-o" nil
+ "M-1" nil
+ "M-2" nil
+ "M-3" nil
+ "M-4" nil
+ [remap other-window] nil)
 
 (map!
-        :g "C-x f" nil
-        :g "M-o" nil
-        :g "M-1" nil
-        :g "M-2" nil
-        :g "M-3" nil
-        :g "M-4" nil
-        [remap other-window] nil)
-
-(map!
-      :g "M-q" 'backward-paragraph
-      :g "M-e" 'forward-paragraph
-      :g "M-SPC" 'cycle-spacing
-      :g "M-m" 'ace-window
-      :g "C-." 'comment-or-uncomment-region
-      :g "C-\\" 'other-window
-      :leader "s i" 'search-amz-internal
-      :leader "s g" 'search-google
-      "M-1" #'+workspace/switch-to-0
-      "M-2" #'+workspace/switch-to-1
-      "M-3" #'+workspace/switch-right)
+ :g
+ "M-q" 'backward-paragraph
+ "M-e" 'forward-paragraph
+ "M-SPC" 'cycle-spacing
+ "M-m" 'ace-window
+ "C-." 'comment-or-uncomment-region
+ "C-\\" 'other-window
+ "M-1" #'+workspace/switch-to-0
+ "M-2" #'+workspace/switch-to-1
+ "M-3" #'+workspace/switch-right
+ :leader
+ "s i" 'search-amz-internal
+ "s g" 'search-google)
 
 
 (add-hook 'window-setup-hook #'doom/quickload-session) ; restore previous session
@@ -134,13 +137,13 @@
 (use-package swiper
   :defer t
   :bind (("C-s" . swiper)
-        :map swiper-map
-        ("C-r" . 'swiper-C-r)))
+         :map swiper-map
+         ("C-r" . 'swiper-C-r)))
 
 (use-package! counsel-projectile
   :bind
   (("C-1" . 'counsel-projectile-switch-project)
-  ("C-2" . 'counsel-projectile)))
+   ("C-2" . 'counsel-projectile)))
 
 (use-package! counsel
   :bind
@@ -153,11 +156,11 @@
   :after ivy
   :config
   (setq ivy-posframe-display-functions-alist
-      '((swiper          . ivy-display-function-fallback)
-        (t               . ivy-posframe-display-at-frame-center))
-      ivy-posframe-parameters
-      '((left-fringe . 8)
-        (right-fringe . 8)))
+        '((swiper          . ivy-display-function-fallback)
+          (t               . ivy-posframe-display-at-frame-center))
+        ivy-posframe-parameters
+        '((left-fringe . 8)
+          (right-fringe . 8)))
   (ivy-posframe-mode 1))
 
 
@@ -166,13 +169,14 @@
   ("C-c f" . 'treemacs)
   :config
   (treemacs-follow-mode t)
-  (setq treemacs-show-hidden-files -1)
+  (setq treemacs-width 50
+        treemacs-show-hidden-files 'nil)
   (add-hook 'projectile-after-switch-project-hook 'treemacs-display-current-project-exclusively))
 
 
 (after! winner
-   (global-set-key (kbd "C-c u") 'winner-undo)
-   (global-set-key (kbd "C-c U") 'winner-redo))
+  (global-set-key (kbd "C-c u") 'winner-undo)
+  (global-set-key (kbd "C-c U") 'winner-redo))
 
 (use-package iedit
   :defer t
@@ -191,7 +195,7 @@
   (("M-o v" . 'vterm)
    :map vterm-mode-map
    (("M-m" . nil)
-   ("C-\\" . nil))
+    ("C-\\" . nil))
    :map vterm-copy-mode-map
    ("M-w" . 'vterm-copy-mode-done)))
 
@@ -201,31 +205,36 @@
         lsp-log-io t
         lsp-signature-auto-activate nil)
   :bind
-      (("<f8>" . lsp)
-      ("M-RET e" . lsp-execute-code-action)
-      ("C-x f" . lsp-treemacs-references)
-      ("C-x j" . lsp-find-definition)
-      ("C-x p" . xref-pop-marker-stack)
-      ("C-x t" . lsp-goto-type-definition)
-      ("C-c i" . lsp-ui-doc-show)
-      ("M-RET f" . lsp-ui-doc-focus-frame)
-      ("M-RET u" . lsp-ui-doc-unfocus-frame)
-      ("M-RET r" . lsp-rename)
-      ("M-RET b" . #'+format/buffer)
-      ("M-RET h" . 'lsp-toggle-symbol-highlight)
-      ("M-RET n" . flycheck-next-error)
-      ("M-RET p" . flycheck-previous-error)))
+  (("<f8>" . lsp)
+   ("M-RET e" . lsp-execute-code-action)
+   ("C-x f" . lsp-treemacs-references)
+   ("C-x j" . lsp-find-definition)
+   ("C-x p" . xref-pop-marker-stack)
+   ("C-x t" . lsp-goto-type-definition)
+   ("C-c i" . lsp-ui-doc-show)
+   ("M-RET f" . lsp-ui-doc-focus-frame)
+   ("M-RET u" . lsp-ui-doc-unfocus-frame)
+   ("M-RET r" . lsp-rename)
+   ("M-RET b" . #'+format/buffer)
+   ("M-RET h" . 'lsp-toggle-symbol-highlight)
+   ("M-RET n" . flycheck-next-error)
+   ("M-RET p" . flycheck-previous-error)))
 
 (after! lsp-ui
   (setq lsp-ui-doc-max-height 150
         lsp-ui-doc-max-width 400) )
 
-;; (after! lsp-python-ms
-;;   (sphinx-doc-mode t)
-;;   (define-key python-mode-map (kbd "M-RET d") 'sphinx-doc)
-;;   (when (executable-find "ipython")
-;;     (setq python-shell-interpreter "ipython"))
-;;   )
+(use-package lsp-java
+  :ensure dap-java
+  :config
+  (setq lsp-java-vmargs (list "-noverify"
+                              "-Xmx1G"
+                              "-XX:+UseG1GC"
+                              "-XX:+UseStringDeduplication"
+                              (concat "-javaagent:" "/Users/venkobas/.dotfiles/lombok.jar")
+                              (concat "-Xbootclasspath/a:" "/Users/venkobas/.dotfiles/lombok.jar" ))))
+
+
 
 (after! persp-mode
   (add-hook! 'persp-filter-save-buffers-functions
