@@ -1,3 +1,4 @@
+
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 
 ;; Place your private configuration here! Remember, you do not need to run 'doom
@@ -19,8 +20,15 @@
 ;;
 ;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
 ;; font string. You generally only need these two:
+
+(setq doom-font (font-spec :family "Source Code Pro"
+                           :size 16
+                           :weight 'normal
+                           :width 'normal))
+(setq doom-big-font (font-spec :family "Source Code Pro" :size 19))
+
 ;; (setq doom-font (font-spec :family "monospace" :size 14 :weight 'semi-light)
-;;      doom-variable-pitch-font (font-spec :family "sans" :size 15))
+;;       doom-variable-pitch-font (font-spec :family "sans" :size 15))
 
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
@@ -57,7 +65,10 @@
 (load! "lisp/hideshowvis.el")
 (load! "lisp/misc.el")
 (load! "lisp/transpose-frame.el")
-
+(setq esup-depth 0)
+(setq-default fill-column 110)
+(setq +workspaces-on-switch-project-behavior t)
+(+popup-mode)
 
 (map!
  :leader
@@ -71,7 +82,9 @@
  "M-2" nil
  "M-3" nil
  "M-4" nil
- [remap other-window] nil)
+ "M-g g" nil
+ "M-g M-g" nil
+ "C-\\" nil)
 
 (map!
  :g
@@ -99,19 +112,20 @@
   (setq doom-modeline-persp-name t))
 
 ;; fix tramp bug?
-(use-package recentf
+(use-package! recentf
+  :defer
   :init
   (setq recentf-auto-cleanup 'never) ;; disable before we start recentf!
   (recentf-mode 1))
 
-(use-package magit
+(use-package! magit
   :defer t
   :bind
   ("C-x g" . magit)
   :config
   (setq magit-display-buffer-function 'magit-display-buffer-traditional))
 
-(use-package shell-pop
+(use-package! shell-pop
   :defer t
   :config
   (custom-set-variables
@@ -119,40 +133,44 @@
    '(shell-pop-window-height 20))
   :bind ("M-o s" . shell-pop))
 
-(use-package! ace-window
-  :bind
-  ("C-\\" . 'other-window)
-  ("M-m" . 'ace-window))
 
 (after! ivy
-  :config
-  (setq ivy-use-selectable-prompt t))
+  (setq ivy-use-selectable-prompt t)
+  (global-set-key (kbd "C-c SPC") 'avy-goto-line))
 
-(use-package hideshowvis-minor-mode
+(use-package! hideshowvis-minor-mode
   :defer t
   :bind (("M-o h l" . hs-hide-level)
          ("M-o h h" . hs-toggle-hiding)
          ("C-c h" . hs-toggle-hiding)))
 
-(use-package swiper
+(use-package! swiper
   :defer t
   :bind (("C-s" . swiper)
          :map swiper-map
          ("C-r" . 'swiper-C-r)))
 
+
 (use-package! counsel-projectile
+  :defer
   :bind
-  (("C-1" . 'counsel-projectile-switch-project)
-   ("C-2" . 'counsel-projectile)))
+  (("C-1" . 'counsel-projectile-switch-project)))
+
+(use-package! ivy
+  :defer t
+  :bind
+  ("C-2" . #'+ivy/projectile-find-file))
 
 (use-package! counsel
+  :defer t
   :bind
   (( "C-3" . 'counsel-switch-buffer)
    ( "C-x b" . 'counsel-switch-buffer)
    ( "C-c g" . '+default/search-project)
+   ( "C-4" . '+default/search-project)
    ( "M-RET c" . 'counsel-compile)))
 
-(use-package ivy-posframe
+(use-package! ivy-posframe
   :after ivy
   :config
   (setq ivy-posframe-display-functions-alist
@@ -165,12 +183,14 @@
 
 
 (use-package! treemacs
+  :defer t
   :bind
   ("C-c f" . 'treemacs)
   :config
   (treemacs-follow-mode t)
   (setq treemacs-width 50
-        treemacs-show-hidden-files 'nil)
+        treemacs-show-hidden-files 'nil
+        treemacs-is-never-other-window 'nil)
   (add-hook 'projectile-after-switch-project-hook 'treemacs-display-current-project-exclusively))
 
 
@@ -178,7 +198,12 @@
   (global-set-key (kbd "C-c u") 'winner-undo)
   (global-set-key (kbd "C-c U") 'winner-redo))
 
-(use-package iedit
+(use-package! ace-window
+  :defer t
+  :init
+  (global-set-key [remap other-window] 'nil))
+
+(use-package! iedit
   :defer t
   :bind
   ("C-;" . iedit-mode))
@@ -191,25 +216,38 @@
 
 
 (use-package! vterm ;; fix https://github.com/akermu/emacs-libvterm/issues/367
+  :defer t
   :bind
   (("M-o v" . 'vterm)
    :map vterm-mode-map
    (("M-m" . nil)
-    ("C-\\" . nil))
+    ("C-\\" . nil)
+    ("C-w" . nil))
    :map vterm-copy-mode-map
-   ("M-w" . 'vterm-copy-mode-done)))
+   ("M-w" . 'vterm-copy-mode-done))
+  :config
+  (setq vterm-max-scrollback 10000))
+
+(add-hook! '+popup-buffer-mode-hook
+  (when (string-match-p "\\*vterm" (buffer-name))
+    (set-window-parameter nil 'window-slot (string-to-number (substring (buffer-name) 6 -1)))))
+
+(add-hook! '+popup-create-window-hook
+  (window-preserve-size nil nil nil))
 
 (use-package! lsp
+  :defer t
   :config
   (setq lsp-ui-doc-enable t
-        lsp-log-io t
-        lsp-signature-auto-activate nil)
+        lsp-signature-auto-activate nil
+        lsp-idle-delay 0.4)
   :bind
   (("<f8>" . lsp)
    ("M-RET e" . lsp-execute-code-action)
    ("C-x f" . lsp-treemacs-references)
    ("C-x j" . lsp-find-definition)
-   ("C-x p" . xref-pop-marker-stack)
+   ("C-x p" . better-jumper-jump-backward)
+   ("C-x u" . better-jumper-jump-forward)
    ("C-x t" . lsp-goto-type-definition)
    ("C-c i" . lsp-ui-doc-show)
    ("M-RET f" . lsp-ui-doc-focus-frame)
@@ -217,17 +255,35 @@
    ("M-RET r" . lsp-rename)
    ("M-RET b" . #'+format/buffer)
    ("M-RET h" . 'lsp-toggle-symbol-highlight)
-   ("M-RET n" . flycheck-next-error)
-   ("M-RET p" . flycheck-previous-error)))
+   ("M-n" . flycheck-next-error)
+   ("M-p" . flycheck-previous-error)))
 
 (after! lsp-ui
   (setq lsp-ui-doc-max-height 150
-        lsp-ui-doc-max-width 400) )
+        lsp-ui-doc-max-width 300))
 
-(use-package lsp-java
+(after! lsp-java
+  (add-to-list 'lsp-file-watch-ignored "[/\\\\]build$")
+  (add-to-list 'lsp-file-watch-ignored "[/\\\\]eclipse-bin$")
+  (add-to-list 'lsp-file-watch-ignored "[/\\\\]env$"))
+
+;; (explain-pause-mode -1)
+
+(after! projectile
+  (setq doom-projectile-cache-limit 3000)
+  (pushnew! projectile-globally-ignored-directories "build" ".log" "env" "apollo-overrides" "~/workplace" "~/doom-emacs/.local/"))
+
+(use-package! lsp-java
+  :defer t
   :ensure dap-java
   :config
+  (setq gcmh-high-cons-threshold (* 100 1024 1024))
+  (setq read-process-output-max (* 10 1024 1024))
+  (setq lsp-idle-delay 0)
+  (setq lsp-ui-sideline-enable nil)
+  (setq lsp-java-project-resource-filters ["node_modules" ".metadata" "archetype-resources" "META-INF/maven" "runtime" "env" "build"])
   (setq lsp-java-vmargs (list "-noverify"
+                              "--illegal-access=warn"
                               "-Xmx1G"
                               "-XX:+UseG1GC"
                               "-XX:+UseStringDeduplication"
@@ -243,16 +299,32 @@
         (ignore-errors (file-remote-p dir))))))
 
 (use-package! auto-dim-other-buffers
+  :defer t
   :init (auto-dim-other-buffers-mode t)
   :config
   (setq auto-dim-other-buffers-dim-on-focus-out nil
         auto-dim-other-buffers-dim-on-switch-to-minibuffer t))
 
-(use-package guru-mode
+(use-package! guru-mode
+  :defer t
   :init
   (guru-global-mode t))
 
-(setenv "WORKON_HOME" "/home/sreenivas/anaconda/envs")
+
+(add-load-path! "/Users/venkobas/emacs-amazon-libs-20201228183957")
+(use-package! smithy-mode)
+(use-package! amz-common)
+(use-package! amz-brazil-config
+  :config
+  (setq auto-mode-alist (cons '("\\.cfg\\'" . brazil-config-mode) auto-mode-alist))
+  (setq auto-mode-alist (cons '("\\.dfg\\'" . brazil-config-mode) auto-mode-alist))
+  (setq auto-mode-alist (cons '("/Config\\'" . brazil-config-mode) auto-mode-alist))
+  (setq auto-mode-alist (cons '("/packageInfo\\'" . brazil-config-mode) auto-mode-alist))
+)
+
+
+(use-package! ion-mode)
+(use-package! amz-misc)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.

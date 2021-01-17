@@ -37,7 +37,7 @@ If the input is empty, select the previous history element instead."
     (browse-url
      (concat "https://www.google.com/search?q=" (thing-at-point 'symbol)))))
 
-;; Google thing at point or highlighted region.
+;; Search internally for thing at point or highlighted region.
 (defun search-amz-internal(start end)
   (interactive "r")
   (if (use-region-p)
@@ -47,17 +47,21 @@ If the input is empty, select the previous history element instead."
      (concat "https://is.amazon.com/search?q=" (thing-at-point 'symbol)))))
 
 
-;; Balance windows when splitting right/below
-(defadvice split-window-right (after rebalance-windows activate)
-  (balance-windows))
-(ad-activate 'split-window-right)
-(defadvice split-window-below (after rebalance-windows activate)
-  (balance-windows))
-(ad-activate 'split-window-below)
-
-
 ;; fix https://github.com/DarthFennec/highlight-indent-guides/issues/82
 (defadvice insert-for-yank (before my-clear-indent-guides activate)
   (remove-text-properties
    0 (length (ad-get-arg 0))
    '(display highlight-indent-guides-prop) (ad-get-arg 0)))
+
+
+;; vterm support M-y
+;; (defun vterm-counsel-yank-pop-action (orig-fun &rest args)
+;;   (if (equal major-mode 'vterm-mode)
+;;       (let ((inhibit-read-only t)
+;;             (yank-undo-function (lambda (_start _end) (vterm-undo))))
+;;         (cl-letf (((symbol-function 'insert-for-yank)
+;;                (lambda (str) (vterm-send-string str t))))
+;;             (apply orig-fun args)))
+;;     (apply orig-fun args)))
+
+;; (advice-add 'counsel-yank-pop-action :around #'vterm-counsel-yank-pop-action)

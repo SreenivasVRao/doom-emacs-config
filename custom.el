@@ -4,7 +4,9 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages '(vterm lsp-ui lsp-treemacs flycheck company-lsp))
- '(safe-local-variable-values '((pyvenv-workon . "py3_ssm"))))
+ '(safe-local-variable-values
+   '((flycheck-disabled-checkers emacs-lisp-checkdoc)
+     (pyvenv-workon . "py3_ssm"))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
