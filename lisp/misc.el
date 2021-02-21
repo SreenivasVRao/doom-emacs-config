@@ -1,22 +1,5 @@
 ;;; ~/.doom.d/lisp/misc.el -*- lexical-binding: t; -*-
 
-;; Ivy Posframe has trouble with the size of the frame.
-;;; Alternatively, disable ivy-rich-mode
-;; replace the frame width multiplier with something slightly higher.
-(defun my-ivy-posframe-get-size ()
-  "The default functon used by `ivy-posframe-size-function'."
-  (list
-   :height ivy-posframe-height
-   :width ivy-posframe-width
-   :min-height (or ivy-posframe-min-height
-                   (let ((height (+ ivy-height 1)))
-                     (min height (or ivy-posframe-height height))))
-   :min-width (or ivy-posframe-min-width
-                  (let ((width (round (* (frame-width) 0.5))))
-                    (min width (or ivy-posframe-width width))))))
-
-
-
 ;; Using C-r within swiper similar to how C-s works.
 ;; Modification of swiper-C-s function.
 (defun swiper-C-r (&optional arg)
@@ -42,6 +25,8 @@ If the input is empty, select the previous history element instead."
   (interactive "r")
   (if (use-region-p)
       (browse-url
+       (concat "https://sage.amazon.com/search/?q=" (buffer-substring start end)))
+      (browse-url
        (concat "https://is.amazon.com/search/?q=" (buffer-substring start end)))
     (browse-url
      (concat "https://is.amazon.com/search?q=" (thing-at-point 'symbol)))))
@@ -54,14 +39,73 @@ If the input is empty, select the previous history element instead."
    '(display highlight-indent-guides-prop) (ad-get-arg 0)))
 
 
-;; vterm support M-y
-;; (defun vterm-counsel-yank-pop-action (orig-fun &rest args)
-;;   (if (equal major-mode 'vterm-mode)
-;;       (let ((inhibit-read-only t)
-;;             (yank-undo-function (lambda (_start _end) (vterm-undo))))
-;;         (cl-letf (((symbol-function 'insert-for-yank)
-;;                (lambda (str) (vterm-send-string str t))))
-;;             (apply orig-fun args)))
-;;     (apply orig-fun args)))
+;; map package dir from local to remote
+(defun sreeni-get-remote-dir (buffername)
+  (let* ((myfilename (replace-regexp-in-string "/Volumes" "~" buffername))
+         (myfilename (subseq (split-string myfilename "/") 0 5))
+         (myfilename (mapconcat 'identity myfilename "/")))
+    (message myfilename)))
 
-;; (advice-add 'counsel-yank-pop-action :around #'vterm-counsel-yank-pop-action)
+;; exec commands on remote shell
+(defun sreeni-vterm-exec-remote (buildtarget)
+  (interactive)
+  (let* ((remotedir (sreeni-get-remote-dir (buffer-file-name))))
+    (+vterm/toggle (buffer-file-name))
+    (vterm-send-string "ssh venkobas@dev-dsk-venkobas-1e-5be32ed4.us-east-1.amazon.com\n")
+    (vterm-send-string (concat "cd " remotedir "\n"))
+    (vterm-send-string (concat buildtarget "\n"))))
+
+
+;;Compilation mode can use some hints for the typical brazil-build
+(defun my/java-class-to-src (clsName)
+  "Junit, at least, reports only the classname of the failing test.  This will optimistically change that to the source file to find it in."
+  (format "%s.java" (replace-regexp-in-string "\\." "/" clsName)))
+(defun my/compilation-junit-file-finder ()
+  (format "tst/%s" (my/java-class-to-src (match-string-no-properties 2))))
+
+(add-to-list 'compilation-error-regexp-alist-alist
+             '(amazon-brazil-junit-1
+               "\\[junit\\] Testcase: \\(.*\\)(\\(.*\\)):.*\\(FAILED\\|ERROR\\)"
+               my/compilation-junit-file-finder nil nil 2 nil (0 compilation-error-face))) ; file line column type hyperlink highlight
+
+
+(defun my/java-class-to-src (clsName)
+  "Junit, at least, reports only the classname of the failing test.  This will optimistically change that to the source file to find it in."
+  (format "%s.java" (replace-regexp-in-string "\\." "/" clsName)))
+
+(defun my/java-test-method-to-src (input)
+  ;; convert com.amazon.package.filename.method to com/amazon/package/filename
+  (mapconcat 'identity (butlast (split-string input "\\.")) "/"))
+
+(defun my/compilation-junit-test-file-finder ()
+  (let ((data (match-data)) ;; query match data
+        (filepath (format "tst/%s.java" (my/java-test-method-to-src (match-string-no-properties 1)))))
+    (set-match-data data) ;; restore match data
+    (message filepath))) ;; returns the filepath
+
+(defun my/compilation-junit-get-line()
+  (let* ((data (match-data)) ;; query match data
+         (targetline (match-string-no-properties 2)))
+    (string-to-number targetline)))
+
+(add-to-list 'compilation-error-regexp-alist-alist
+             '(amazon-brazil-junit-2
+               "\\[junit\\].*at \\(.*\\)\(.*:\\([0-9]+\\)\)"
+               my/compilation-junit-test-file-finder
+               my/compilation-junit-get-line nil nil nil (0 compilation-error-face)))
+
+(add-to-list 'compilation-error-regexp-alist  'amazon-brazil-junit-1)
+(add-to-list 'compilation-error-regexp-alist  'amazon-brazil-junit-2)
+
+(setq counsel-remote-compile-history '())
+(defun counsel-remote-compile (&optional dir)
+  (interactive)
+  (ivy-read "Run on Dev-Desk: "
+            (remove-duplicates counsel-remote-compile-history)
+            :action (lambda (x) (let* ((remotehost "/ssh:venkobas@dev-dsk-venkobas-1e-5be32ed4.us-east-1.amazon.com:")
+                                       (remotepath (sreeni-get-remote-dir (buffer-file-name)))
+                                       (default-directory (concat remotehost remotepath)))
+                                  (counsel-compile--action x)))
+            :keymap counsel-compile-map
+            :history 'counsel-remote-compile-history
+            :caller 'counsel-remote-compile))

@@ -65,16 +65,18 @@
 (load! "lisp/hideshowvis.el")
 (load! "lisp/misc.el")
 (load! "lisp/transpose-frame.el")
-(setq esup-depth 0)
 (setq-default fill-column 110)
+
 (setq +workspaces-on-switch-project-behavior t)
 (+popup-mode)
+
 
 (map!
  :leader
  "f" nil
  "i" nil
- "s i" nil
+ "s i" 'search-amz-internal
+ "s g" 'search-google
  :g
  "C-x f" nil
  "M-o" nil
@@ -97,10 +99,7 @@
  "M-1" #'+workspace/switch-to-0
  "M-2" #'+workspace/switch-to-1
  "M-3" #'+workspace/switch-right
- :leader
- "s i" 'search-amz-internal
- "s g" 'search-google)
-
+)
 
 (add-hook 'window-setup-hook #'doom/quickload-session) ; restore previous session
 
@@ -111,12 +110,26 @@
     '(misc-info minor-modes checker input-method buffer-encoding major-mode process vcs "  ")) ; <-- added padding here
   (setq doom-modeline-persp-name t))
 
+
 ;; fix tramp bug?
 (use-package! recentf
-  :defer
+  :defer t
   :init
   (setq recentf-auto-cleanup 'never) ;; disable before we start recentf!
   (recentf-mode 1))
+
+(use-package! tramp
+  :defer t
+  :config
+  (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+  (setq tramp-default-remote-shell "/bin/bash")
+  (connection-local-set-profile-variables 'remote-bash
+                                          '((shell-file-name . "/bin/bash")
+                                            (shell-command-switch . "-ic")))
+  (connection-local-set-profiles
+   '(:application tramp :protocol "ssh" :machine "dev-dsk-venkobas-1e-5be32ed4.us-east-1.amazon.com")
+   'remote-bash))
+
 
 (use-package! magit
   :defer t
@@ -125,13 +138,13 @@
   :config
   (setq magit-display-buffer-function 'magit-display-buffer-traditional))
 
-(use-package! shell-pop
-  :defer t
-  :config
-  (custom-set-variables
-   '(shell-pop-shell-type (quote ("vterm" "*vterm*" (lambda nil (vterm)))))
-   '(shell-pop-window-height 20))
-  :bind ("M-o s" . shell-pop))
+;; (use-package! shell-pop
+;;   :defer t
+;;   :config
+;;   (custom-set-variables
+;;    '(shell-pop-shell-type (quote ("vterm" "*vterm*" (lambda nil (vterm)))))
+;;    '(shell-pop-window-height 20))
+;;   :bind ("M-o s" . shell-pop))
 
 
 (after! ivy
@@ -158,6 +171,10 @@
 
 (use-package! ivy
   :defer t
+  :config
+  (defadvice! change-ivy-file-search-prompt (args)
+  :filter-args #'+ivy-file-search
+  (plist-put args :prompt (format "Search [%s]: " (doom-project-name (plist-get args :in)))))
   :bind
   ("C-2" . #'+ivy/projectile-find-file))
 
@@ -168,7 +185,8 @@
    ( "C-x b" . 'counsel-switch-buffer)
    ( "C-c g" . '+default/search-project)
    ( "C-4" . '+default/search-project)
-   ( "M-RET c" . 'counsel-compile)))
+   ( "M-RET c" . 'counsel-compile)
+   ( "C-c r" . 'counsel-remote-compile)))
 
 (use-package! ivy-posframe
   :after ivy
@@ -181,6 +199,8 @@
           (right-fringe . 8)))
   (ivy-posframe-mode 1))
 
+(after! company-mode
+  (define-key company-active-map (kbd "C-g") 'keyboard-quit))
 
 (use-package! treemacs
   :defer t
@@ -219,6 +239,7 @@
   :defer t
   :bind
   (("M-o v" . 'vterm)
+   ("M-o s" . (lambda()(interactive) (sreeni-vterm-exec-remote "")(vterm-send-C-l)))
    :map vterm-mode-map
    (("M-m" . nil)
     ("C-\\" . nil)
@@ -262,21 +283,12 @@
   (setq lsp-ui-doc-max-height 150
         lsp-ui-doc-max-width 300))
 
-(after! lsp-java
-  (add-to-list 'lsp-file-watch-ignored "[/\\\\]build$")
-  (add-to-list 'lsp-file-watch-ignored "[/\\\\]eclipse-bin$")
-  (add-to-list 'lsp-file-watch-ignored "[/\\\\]env$"))
-
-;; (explain-pause-mode -1)
-
-(after! projectile
-  (setq doom-projectile-cache-limit 3000)
-  (pushnew! projectile-globally-ignored-directories "build" ".log" "env" "apollo-overrides" "~/workplace" "~/doom-emacs/.local/"))
-
 (use-package! lsp-java
   :defer t
-  :ensure dap-java
   :config
+  (add-to-list 'lsp-file-watch-ignored "[/\\\\]build$")
+  (add-to-list 'lsp-file-watch-ignored "[/\\\\]eclipse-bin$")
+  (add-to-list 'lsp-file-watch-ignored "[/\\\\]env$")
   (setq gcmh-high-cons-threshold (* 100 1024 1024))
   (setq read-process-output-max (* 10 1024 1024))
   (setq lsp-idle-delay 0)
@@ -290,7 +302,35 @@
                               (concat "-javaagent:" "/Users/venkobas/.dotfiles/lombok.jar")
                               (concat "-Xbootclasspath/a:" "/Users/venkobas/.dotfiles/lombok.jar" ))))
 
+(after! projectile
+  (setq doom-projectile-cache-limit 3000)
+  (pushnew! projectile-globally-ignored-directories "build" ".log" "env" "apollo-overrides" "~/workplace" "~/doom-emacs/.local/" ".idea"))
 
+;; (defun dap-java-testng-report ()
+;;   (interactive)
+;;   (f-join (lsp-workspace-root) dap-java-testng-report-dir "index.html"))
+;; (defun dap-java-open-testng-report ()
+;;   (interactive)
+;;   (eww-open-file (dap-java-testng-report)))
+;; (defun dap-java-open-testng-report-browser ()
+;;   (interactive)
+;;   (call-process-shell-command (concat "xdg-open " (dap-java-testng-report))))
+;;   i have this thing to help me switch back and forth quickly b/t code and tests
+;; (defun counsel-projectile-find-file-basename ()
+;;   "Find project files matching the current file but without a test suffix"
+;;   (interactive)
+;;   (ivy-read (projectile-prepend-project-name "Find source: ")
+;; 	    (projectile-current-project-files)
+;;             :matcher counsel-projectile-find-file-matcher
+;;             :require-match t
+;; 	    :initial-input (replace-regexp-in-string
+;; 			    (format "\\(.*\\)\\(%s\\)\$" (s-join "\\|" '("Test" "Tests" "test" "tests")))
+;; 			    "\\1"
+;; 			    (f-base (buffer-file-name))
+;; 			    t)
+;;             :sort counsel-projectile-sort-files
+;;             :action counsel-projectile-find-file-action
+;;             :caller 'counsel-projectile-find-file))
 
 (after! persp-mode
   (add-hook! 'persp-filter-save-buffers-functions
@@ -320,11 +360,13 @@
   (setq auto-mode-alist (cons '("\\.dfg\\'" . brazil-config-mode) auto-mode-alist))
   (setq auto-mode-alist (cons '("/Config\\'" . brazil-config-mode) auto-mode-alist))
   (setq auto-mode-alist (cons '("/packageInfo\\'" . brazil-config-mode) auto-mode-alist))
+  (add-hook 'brazil-config-mode-hook 'display-line-numbers-mode)
 )
 
-
+(setq auto-mode-alist (cons '("\\.template\\'" . yaml-mode) auto-mode-alist))
 (use-package! ion-mode)
 (use-package! amz-misc)
+(use-package! amz-workspace)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
