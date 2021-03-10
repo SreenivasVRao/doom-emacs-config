@@ -60,33 +60,29 @@
 ;; You can also try 'gd' (or 'C-c g d') to jump to their definition and see how
 ;; they are implemented.
 
+(load! "lisp/misc.elc")
+(load! "lisp/transpose-frame.elc")
+(set-frame-position (selected-frame) -1850 -1440)
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
-
-(load! "lisp/hideshowvis.el")
-(load! "lisp/misc.el")
-(load! "lisp/transpose-frame.el")
 (setq-default fill-column 110)
-
-(setq +workspaces-on-switch-project-behavior t)
-(+popup-mode)
-
 
 (map!
  :leader
- "f" nil
- "i" nil
  "s i" 'search-amz-internal
- "s g" 'search-google
- :g
- "C-x f" nil
- "M-o" nil
- "M-1" nil
- "M-2" nil
- "M-3" nil
- "M-4" nil
- "M-g g" nil
- "M-g M-g" nil
- "C-\\" nil)
+ "s g" 'search-google)
+
+(global-unset-key (kbd "C-c f"))
+(global-unset-key (kbd "C-c i"))
+(global-unset-key (kbd "C-x f"))
+(global-unset-key (kbd "M-o"))
+(global-unset-key (kbd "M-o"))
+(global-unset-key (kbd "M-1"))
+(global-unset-key (kbd "M-2"))
+(global-unset-key (kbd "M-3"))
+(global-unset-key (kbd "M-4"))
+(global-unset-key (kbd "M-g g"))
+(global-unset-key (kbd "M-g M-g"))
+(global-unset-key (kbd "C-\\"))
 
 (map!
  :g
@@ -103,13 +99,9 @@
  "C-x 3" 'my-split-window-right
  )
 
-(add-hook 'window-setup-hook #'doom/quickload-session) ; restore previous session
-
+(+popup-mode)
 
 (after! doom-modeline
-  (doom-modeline-def-modeline 'main
-    '(bar matches buffer-info remote-host buffer-position parrot selection-info)
-    '(misc-info minor-modes checker input-method buffer-encoding major-mode process vcs "  ")) ; <-- added padding here
   (setq doom-modeline-persp-name t))
 
 
@@ -140,20 +132,6 @@
   :config
   (setq magit-display-buffer-function 'magit-display-buffer-traditional))
 
-;; (use-package! shell-pop
-;;   :defer t
-;;   :config
-;;   (custom-set-variables
-;;    '(shell-pop-shell-type (quote ("vterm" "*vterm*" (lambda nil (vterm)))))
-;;    '(shell-pop-window-height 20))
-;;   :bind ("M-o s" . shell-pop))
-
-
-(after! ivy
-  (setq ivy-use-selectable-prompt t)
-  (global-set-key (kbd "C-c SPC") 'avy-goto-line)
-  (undefine-key! ivy-minibuffer-map "S-SPC"))
-
 (use-package! hideshowvis-minor-mode
   :defer t
   :bind (("M-o h l" . hs-hide-level)
@@ -166,21 +144,23 @@
          :map swiper-map
          ("C-r" . 'swiper-C-r)))
 
-
 (use-package! counsel-projectile
-  :defer
+  :defer t
   :bind
   (("C-1" . 'counsel-projectile-switch-project)))
 
 (use-package! ivy
   :defer t
   :config
+  (setq ivy-use-selectable-prompt t)
+  (undefine-key! ivy-minibuffer-map "S-SPC")
   (setq ivy-prescient-enable-filtering nil)
   (defadvice! change-ivy-file-search-prompt (args)
     :filter-args #'+ivy-file-search
     (plist-put args :prompt (format "Search [%s]: " (doom-project-name (plist-get args :in)))))
   :bind
-  ("C-2" . #'+ivy/projectile-find-file))
+  ("C-2" . #'+ivy/projectile-find-file)
+  ("C-c SPC" . 'avy-goto-line))
 
 (use-package! counsel
   :defer t
@@ -233,9 +213,7 @@
 
 (after! flycheck
   (setq-default flycheck-flake8-maximum-line-length 99); 80 char rule is for noobs
-  (setq flycheck-navigation-minimum-level 'error)
-  ;; (add-to-list 'flycheck-check-syntax-automatically 'new-line)
-  )
+  (setq flycheck-navigation-minimum-level 'error))
 
 
 (use-package! vterm ;; fix https://github.com/akermu/emacs-libvterm/issues/367
@@ -256,9 +234,9 @@
   :config
   (setq vterm-max-scrollback 10000))
 
-(add-hook! '+popup-buffer-mode-hook
-  (when (string-match-p "\\*vterm" (buffer-name))
-    (set-window-parameter nil 'window-slot (string-to-number (substring (buffer-name) 6 -1)))))
+;; (add-hook! '+popup-buffer-mode-hook
+;;   (when (string-match-p "\\*vterm" (buffer-name))
+;;     (set-window-parameter nil 'window-slot (string-to-number (substring (buffer-name) 6 -1)))))
 
 (add-hook! '+popup-create-window-hook
   (window-preserve-size nil nil nil))
@@ -296,9 +274,9 @@
   (add-to-list 'lsp-file-watch-ignored "[/\\\\]build$")
   (add-to-list 'lsp-file-watch-ignored "[/\\\\]eclipse-bin$")
   (add-to-list 'lsp-file-watch-ignored "[/\\\\]env$")
-  (setq gcmh-high-cons-threshold (* 100 1024 1024))
-  (setq read-process-output-max (* 10 1024 1024))
-  (setq lsp-idle-delay 0.5)
+  ;; (setq gcmh-high-cons-threshold (* 100 1024 1024))
+  ;; (setq read-process-output-max (* 10 1024 1024))
+  (setq lsp-idle-delay 0.1)
   (setq lsp-ui-sideline-enable nil)
   (setq lsp-java-project-resource-filters ["node_modules" ".metadata" "archetype-resources" "META-INF/maven" "runtime" "env" "build"])
   (setq lsp-java-vmargs (list "-noverify"
@@ -313,7 +291,6 @@
   (setq doom-projectile-cache-limit 3000)
   (pushnew! projectile-globally-ignored-directories "build" ".log" "env" "apollo-overrides" "~/workplace"
             "~/.emacs.d/.local/" ".idea"))
-
 
 ;; (defun dap-java-testng-report ()
 ;;   (interactive)
@@ -342,6 +319,7 @@
 ;;             :caller 'counsel-projectile-find-file))
 
 (after! persp-mode
+  (setq +workspaces-on-switch-project-behavior t)
   (add-hook! 'persp-filter-save-buffers-functions
     (defun is-remote-buffer-p (b)
       (let ((dir (buffer-local-value 'default-directory b)))
@@ -362,10 +340,8 @@
 (after! web-mode
   (setq web-mode-code-indent-offset 2))
 
-(add-load-path! "/Users/venkobas/emacs-amazon-libs-20201228183957")
-(use-package! smithy-mode)
-(use-package! amz-common)
 (use-package! amz-brazil-config
+  :defer t
   :config
   (setq auto-mode-alist (cons '("\\.cfg\\'" . brazil-config-mode) auto-mode-alist))
   (setq auto-mode-alist (cons '("\\.dfg\\'" . brazil-config-mode) auto-mode-alist))
@@ -376,9 +352,6 @@
   )
 
 (setq auto-mode-alist (cons '("\\.template\\'" . yaml-mode) auto-mode-alist))
-(use-package! ion-mode)
-(use-package! amz-misc)
-(use-package! amz-workspace)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.

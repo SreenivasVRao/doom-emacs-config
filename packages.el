@@ -50,16 +50,19 @@
 ;(unpin! t)
 (package! guru-mode)
 (package! gruvbox-theme)
-(package! vc-msg)
-(package! company-lsp)
-(package! direnv)
-(package! window-purpose)
 (package! lsp-treemacs)
-(package! sphinx-doc)
-(package! auto-dim-other-buffers)
 (package! iedit)
 (package! prescient :pin "9631db72b95f87a50453867587f03c5862")
 (package! ivy-rich :disable t)
-;; (package! elisp-benchmarks)
-;; (package! esup)
-;; (package! benchmark-init)
+(package! auto-dim-other-buffers)
+
+(defmacro amazon-package! (name)
+  `(package! ,name
+     :recipe (:type git
+              :repo "ssh://git.amazon.com:2222/pkg/EmacsAmazonLibs")))
+
+(amazon-package! smithy-mode)
+(amazon-package! amz-common)
+(amazon-package! amz-brazil-config)
+(amazon-package! ion-mode)
+(amazon-package! amz-workspace)

@@ -26,10 +26,8 @@ If the input is empty, select the previous history element instead."
   (if (use-region-p)
       (browse-url
        (concat "https://sage.amazon.com/search/?q=" (buffer-substring start end)))
-      (browse-url
-       (concat "https://is.amazon.com/search/?q=" (buffer-substring start end)))
     (browse-url
-     (concat "https://is.amazon.com/search?q=" (thing-at-point 'symbol)))))
+     (concat "https://sage.amazon.com/search?q=" (thing-at-point 'symbol)))))
 
 
 ;; fix https://github.com/DarthFennec/highlight-indent-guides/issues/82
@@ -37,7 +35,6 @@ If the input is empty, select the previous history element instead."
   (remove-text-properties
    0 (length (ad-get-arg 0))
    '(display highlight-indent-guides-prop) (ad-get-arg 0)))
-
 
 ;; map package dir from local to remote
 (defun sreeni-get-package-dir (filepath)
@@ -55,7 +52,6 @@ If the input is empty, select the previous history element instead."
     (vterm-send-string (concat "cd " remotedir "\n"))
     (vterm-send-string (concat buildtarget "\n"))))
 
-
 ;;Compilation mode can use some hints for the typical brazil-build
 (defun my/java-class-to-src (clsName)
   "Junit, at least, reports only the classname of the failing test.  This will optimistically change that to the source file to find it in."
@@ -67,7 +63,6 @@ If the input is empty, select the previous history element instead."
              '(amazon-brazil-junit-1
                "\\[junit\\] Testcase: \\(.*\\)(\\(.*\\)):.*\\(FAILED\\|ERROR\\)"
                my/compilation-junit-file-finder nil nil 2 nil (0 compilation-error-face))) ; file line column type hyperlink highlight
-
 
 (defun my/java-class-to-src (clsName)
   "Junit, at least, reports only the classname of the failing test.  This will optimistically change that to the source file to find it in."
@@ -115,7 +110,7 @@ If the input is empty, select the previous history element instead."
                "\\[echo\\].+file:///local\\(.+.html\\)"
                my/compilation-brazil-doc-open-browser  nil nil nil nil (0 compilation-warning-face)))
 
-;;
+
 (setq compilation-error-regexp-alist '(amazon-brazil-junit-1
                                        amazon-brazil-junit-2
                                        amazon-brazil-javac-1
@@ -139,7 +134,7 @@ If the input is empty, select the previous history element instead."
             :history 'counsel-remote-compile-history
             :caller 'counsel-remote-compile))
 
-(defun amz-browse-releases-at-point()
+(defun amz-browse-release-at-point()
   "Find the package under point in code.amazon.com."
   (interactive)
   (let  ((myurl (concat "https://code.amazon.com/packages/" (thing-at-point 'symbol) "/releases")))
