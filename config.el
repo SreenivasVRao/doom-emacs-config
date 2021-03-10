@@ -23,9 +23,9 @@
 
 (setq doom-font (font-spec :family "Source Code Pro"
                            :size 16
-                           :weight 'normal
+                           :weight 'semi-light
                            :width 'normal))
-(setq doom-big-font (font-spec :family "Source Code Pro" :size 19))
+(setq doom-big-font (font-spec :family "Source Code Pro" :size 19 :weight 'semi-light))
 
 ;; (setq doom-font (font-spec :family "monospace" :size 14 :weight 'semi-light)
 ;;       doom-variable-pitch-font (font-spec :family "sans" :size 15))
@@ -99,7 +99,9 @@
  "M-1" #'+workspace/switch-to-0
  "M-2" #'+workspace/switch-to-1
  "M-3" #'+workspace/switch-right
-)
+ "C-x 2" 'my-split-window-below
+ "C-x 3" 'my-split-window-right
+ )
 
 (add-hook 'window-setup-hook #'doom/quickload-session) ; restore previous session
 
@@ -127,7 +129,7 @@
                                           '((shell-file-name . "/bin/bash")
                                             (shell-command-switch . "-ic")))
   (connection-local-set-profiles
-   '(:application tramp :protocol "ssh" :machine "dev-dsk-venkobas-1e-5be32ed4.us-east-1.amazon.com")
+   '(:application tramp :protocol "ssh" :machine "sreeni-dev-dsk.aka.corp.amazon.com")
    'remote-bash))
 
 
@@ -149,7 +151,8 @@
 
 (after! ivy
   (setq ivy-use-selectable-prompt t)
-  (global-set-key (kbd "C-c SPC") 'avy-goto-line))
+  (global-set-key (kbd "C-c SPC") 'avy-goto-line)
+  (undefine-key! ivy-minibuffer-map "S-SPC"))
 
 (use-package! hideshowvis-minor-mode
   :defer t
@@ -159,7 +162,7 @@
 
 (use-package! swiper
   :defer t
-  :bind (("C-s" . swiper)
+  :bind (("C-s" . 'swiper)
          :map swiper-map
          ("C-r" . 'swiper-C-r)))
 
@@ -172,9 +175,10 @@
 (use-package! ivy
   :defer t
   :config
+  (setq ivy-prescient-enable-filtering nil)
   (defadvice! change-ivy-file-search-prompt (args)
-  :filter-args #'+ivy-file-search
-  (plist-put args :prompt (format "Search [%s]: " (doom-project-name (plist-get args :in)))))
+    :filter-args #'+ivy-file-search
+    (plist-put args :prompt (format "Search [%s]: " (doom-project-name (plist-get args :in)))))
   :bind
   ("C-2" . #'+ivy/projectile-find-file))
 
@@ -185,7 +189,6 @@
    ( "C-x b" . 'counsel-switch-buffer)
    ( "C-c g" . '+default/search-project)
    ( "C-4" . '+default/search-project)
-   ( "M-RET c" . 'counsel-compile)
    ( "C-c r" . 'counsel-remote-compile)))
 
 (use-package! ivy-posframe
@@ -199,8 +202,8 @@
           (right-fringe . 8)))
   (ivy-posframe-mode 1))
 
-(after! company-mode
-  (define-key company-active-map (kbd "C-g") 'keyboard-quit))
+(after! company
+  (setq company-idle-delay 0.1))
 
 (use-package! treemacs
   :defer t
@@ -238,7 +241,11 @@
 (use-package! vterm ;; fix https://github.com/akermu/emacs-libvterm/issues/367
   :defer t
   :bind
-  (("M-o v" . 'vterm)
+  (("M-o v" . (lambda()
+                (interactive)
+                (vterm)
+                (vterm-send-string
+                 (concat "cd" (sreeni-get-package-dir (buffer-file-name))))))
    ("M-o s" . (lambda()(interactive) (sreeni-vterm-exec-remote "")(vterm-send-C-l)))
    :map vterm-mode-map
    (("M-m" . nil)
@@ -291,12 +298,12 @@
   (add-to-list 'lsp-file-watch-ignored "[/\\\\]env$")
   (setq gcmh-high-cons-threshold (* 100 1024 1024))
   (setq read-process-output-max (* 10 1024 1024))
-  (setq lsp-idle-delay 0)
+  (setq lsp-idle-delay 0.5)
   (setq lsp-ui-sideline-enable nil)
   (setq lsp-java-project-resource-filters ["node_modules" ".metadata" "archetype-resources" "META-INF/maven" "runtime" "env" "build"])
   (setq lsp-java-vmargs (list "-noverify"
                               "--illegal-access=warn"
-                              "-Xmx1G"
+                              "-Xmx6G"
                               "-XX:+UseG1GC"
                               "-XX:+UseStringDeduplication"
                               (concat "-javaagent:" "/Users/venkobas/.dotfiles/lombok.jar")
@@ -304,7 +311,9 @@
 
 (after! projectile
   (setq doom-projectile-cache-limit 3000)
-  (pushnew! projectile-globally-ignored-directories "build" ".log" "env" "apollo-overrides" "~/workplace" "~/doom-emacs/.local/" ".idea"))
+  (pushnew! projectile-globally-ignored-directories "build" ".log" "env" "apollo-overrides" "~/workplace"
+            "~/.emacs.d/.local/" ".idea"))
+
 
 ;; (defun dap-java-testng-report ()
 ;;   (interactive)
@@ -350,6 +359,8 @@
   :init
   (guru-global-mode t))
 
+(after! web-mode
+  (setq web-mode-code-indent-offset 2))
 
 (add-load-path! "/Users/venkobas/emacs-amazon-libs-20201228183957")
 (use-package! smithy-mode)
@@ -361,7 +372,8 @@
   (setq auto-mode-alist (cons '("/Config\\'" . brazil-config-mode) auto-mode-alist))
   (setq auto-mode-alist (cons '("/packageInfo\\'" . brazil-config-mode) auto-mode-alist))
   (add-hook 'brazil-config-mode-hook 'display-line-numbers-mode)
-)
+  (add-hook 'brazil-config-mode-hook 'rainbow-delimiters-mode)
+  )
 
 (setq auto-mode-alist (cons '("\\.template\\'" . yaml-mode) auto-mode-alist))
 (use-package! ion-mode)

@@ -40,8 +40,8 @@ If the input is empty, select the previous history element instead."
 
 
 ;; map package dir from local to remote
-(defun sreeni-get-remote-dir (buffername)
-  (let* ((myfilename (replace-regexp-in-string "/Volumes" "~" buffername))
+(defun sreeni-get-package-dir (filepath)
+  (let* ((myfilename (replace-regexp-in-string "/Volumes" "~" filepath))
          (myfilename (subseq (split-string myfilename "/") 0 5))
          (myfilename (mapconcat 'identity myfilename "/")))
     (message myfilename)))
@@ -49,9 +49,9 @@ If the input is empty, select the previous history element instead."
 ;; exec commands on remote shell
 (defun sreeni-vterm-exec-remote (buildtarget)
   (interactive)
-  (let* ((remotedir (sreeni-get-remote-dir (buffer-file-name))))
+  (let* ((remotedir (sreeni-get-package-dir (buffer-file-name))))
     (+vterm/toggle (buffer-file-name))
-    (vterm-send-string "ssh venkobas@dev-dsk-venkobas-1e-5be32ed4.us-east-1.amazon.com\n")
+    (vterm-send-string "ssh venkobas@sreeni-dev-dsk.aka.corp.amazon.com\n")
     (vterm-send-string (concat "cd " remotedir "\n"))
     (vterm-send-string (concat buildtarget "\n"))))
 
@@ -88,24 +88,73 @@ If the input is empty, select the previous history element instead."
          (targetline (match-string-no-properties 2)))
     (string-to-number targetline)))
 
+(defun my/compilation-brazil-doc-open-browser()
+  (let* ((data (match-data)) ;; query match data
+         (targetline (match-string-no-properties 1))
+         (webpage (replace-regexp-in-string "/home/venkobas/workplace"
+                                            "http://sreeni-dev-dsk.aka.corp.amazon.com:8000"
+                                            targetline)))
+         (eww webpage)
+         (set-match-data data))
+    (identity 1))
+
 (add-to-list 'compilation-error-regexp-alist-alist
              '(amazon-brazil-junit-2
                "\\[junit\\].*at \\(.*\\)\(.*:\\([0-9]+\\)\)"
                my/compilation-junit-test-file-finder
                my/compilation-junit-get-line nil nil nil (0 compilation-error-face)))
 
-(add-to-list 'compilation-error-regexp-alist  'amazon-brazil-junit-1)
-(add-to-list 'compilation-error-regexp-alist  'amazon-brazil-junit-2)
+(add-to-list 'compilation-error-regexp-alist-alist
+             '(amazon-brazil-javac-1
+               "\\[javac\\] /local\\(.*\\):\\([0-9]+\\)"
+               1
+               2 nil nil nil (0 compilation-error-face)))
+
+(add-to-list 'compilation-error-regexp-alist-alist
+             '(amazon-brazil-documentation
+               "\\[echo\\].+file:///local\\(.+.html\\)"
+               my/compilation-brazil-doc-open-browser  nil nil nil nil (0 compilation-warning-face)))
+
+;;
+(setq compilation-error-regexp-alist '(amazon-brazil-junit-1
+                                       amazon-brazil-junit-2
+                                       amazon-brazil-javac-1
+                                       ;; amazon-brazil-documentation
+                                       java
+                                       javac
+                                       jikes-file
+                                       maven
+                                       jikes-line))
 
 (setq counsel-remote-compile-history '())
 (defun counsel-remote-compile (&optional dir)
   (interactive)
   (ivy-read "Run on Dev-Desk: "
             (remove-duplicates counsel-remote-compile-history)
-            :action (lambda (x) (let* ((remotehost "/ssh:venkobas@dev-dsk-venkobas-1e-5be32ed4.us-east-1.amazon.com:")
-                                       (remotepath (sreeni-get-remote-dir (buffer-file-name)))
+            :action (lambda (x) (let* ((remotehost "/ssh:venkobas@sreeni-dev-dsk.aka.corp.amazon.com:")
+                                       (remotepath (sreeni-get-package-dir (buffer-file-name)))
                                        (default-directory (concat remotehost remotepath)))
                                   (counsel-compile--action x)))
             :keymap counsel-compile-map
             :history 'counsel-remote-compile-history
             :caller 'counsel-remote-compile))
+
+(defun amz-browse-releases-at-point()
+  "Find the package under point in code.amazon.com."
+  (interactive)
+  (let  ((myurl (concat "https://code.amazon.com/packages/" (thing-at-point 'symbol) "/releases")))
+    (message "Opening %s" myurl)
+    (browse-url myurl)))
+
+
+(defun my-split-window-right ()
+    (interactive)
+    (split-window-right)
+    (other-window 1)
+    (recenter-top-bottom))
+
+(defun my-split-window-below ()
+    (interactive)
+    (split-window-below)
+    (other-window 1)
+    (recenter-top-bottom))
