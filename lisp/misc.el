@@ -38,10 +38,12 @@ If the input is empty, select the previous history element instead."
 
 ;; map package dir from local to remote
 (defun sreeni-get-package-dir (filepath)
+  (if (string-prefix-p "/Volumes/workplace" filepath)
   (let* ((myfilename (replace-regexp-in-string "/Volumes" "~" filepath))
-         (myfilename (subseq (split-string myfilename "/") 0 5))
+         (myfilename (cl-subseq (split-string myfilename "/") 0 5))
          (myfilename (mapconcat 'identity myfilename "/")))
-    (message myfilename)))
+    (message myfilename))
+  (message filepath)))
 
 ;; exec commands on remote shell
 (defun sreeni-vterm-exec-remote (buildtarget)
@@ -56,6 +58,7 @@ If the input is empty, select the previous history element instead."
 (defun my/java-class-to-src (clsName)
   "Junit, at least, reports only the classname of the failing test.  This will optimistically change that to the source file to find it in."
   (format "%s.java" (replace-regexp-in-string "\\." "/" clsName)))
+
 (defun my/compilation-junit-file-finder ()
   (format "tst/%s" (my/java-class-to-src (match-string-no-properties 2))))
 
@@ -63,10 +66,6 @@ If the input is empty, select the previous history element instead."
              '(amazon-brazil-junit-1
                "\\[junit\\] Testcase: \\(.*\\)(\\(.*\\)):.*\\(FAILED\\|ERROR\\)"
                my/compilation-junit-file-finder nil nil 2 nil (0 compilation-error-face))) ; file line column type hyperlink highlight
-
-(defun my/java-class-to-src (clsName)
-  "Junit, at least, reports only the classname of the failing test.  This will optimistically change that to the source file to find it in."
-  (format "%s.java" (replace-regexp-in-string "\\." "/" clsName)))
 
 (defun my/java-test-method-to-src (input)
   ;; convert com.amazon.package.filename.method to com/amazon/package/filename
@@ -79,8 +78,7 @@ If the input is empty, select the previous history element instead."
     (message filepath))) ;; returns the filepath
 
 (defun my/compilation-junit-get-line()
-  (let* ((data (match-data)) ;; query match data
-         (targetline (match-string-no-properties 2)))
+  (let ((targetline (match-string-no-properties 2)))
     (string-to-number targetline)))
 
 (defun my/compilation-brazil-doc-open-browser()
@@ -122,10 +120,10 @@ If the input is empty, select the previous history element instead."
                                        jikes-line))
 
 (setq counsel-remote-compile-history '())
-(defun counsel-remote-compile (&optional dir)
+(defun counsel-remote-compile ()
   (interactive)
   (ivy-read "Run on Dev-Desk: "
-            (remove-duplicates counsel-remote-compile-history)
+            (cl-remove-duplicates counsel-remote-compile-history)
             :action (lambda (x) (let* ((remotehost "/ssh:venkobas@sreeni-dev-dsk.aka.corp.amazon.com:")
                                        (remotepath (sreeni-get-package-dir (buffer-file-name)))
                                        (default-directory (concat remotehost remotepath)))

@@ -49,7 +49,6 @@
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
 ;(unpin! t)
 (package! guru-mode)
-(package! gruvbox-theme)
 (package! lsp-treemacs)
 (package! iedit)
 (package! prescient :pin "9631db72b95f87a50453867587f03c5862")

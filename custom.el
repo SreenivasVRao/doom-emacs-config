@@ -3,6 +3,8 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   '("d6603a129c32b716b3d3541fc0b6bfe83d0e07f1954ee64517aa62c9405a3441" default))
  '(package-selected-packages '(vterm lsp-ui lsp-treemacs flycheck company-lsp))
  '(safe-local-variable-values
    '((git-commit-major-mode . git-commit-elisp-text-mode)

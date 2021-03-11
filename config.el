@@ -33,7 +33,7 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'gruvbox-dark-hard)
+(setq doom-theme 'doom-gruvbox)
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
@@ -64,7 +64,9 @@
 (load! "lisp/transpose-frame.elc")
 (set-frame-position (selected-frame) -1850 -1440)
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
-(setq-default fill-column 110)
+
+(after! fill-column
+  (setq-default fill-column 110))
 
 (map!
  :leader
@@ -99,11 +101,6 @@
  "C-x 3" 'my-split-window-right
  )
 
-(+popup-mode)
-
-(after! doom-modeline
-  (setq doom-modeline-persp-name t))
-
 
 ;; fix tramp bug?
 (use-package! recentf
@@ -115,6 +112,7 @@
 (use-package! tramp
   :defer t
   :config
+  (setq tramp-use-ssh-controlmaster-options nil)
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
   (setq tramp-default-remote-shell "/bin/bash")
   (connection-local-set-profile-variables 'remote-bash
@@ -180,10 +178,17 @@
         ivy-posframe-parameters
         '((left-fringe . 8)
           (right-fringe . 8)))
-  (ivy-posframe-mode 1))
+  :custom-face
+  (ivy-posframe-border ((t (:background "#383838")))))
 
 (after! company
   (setq company-idle-delay 0.1))
+
+(after! doom-modeline
+ (doom-modeline-def-modeline 'main
+   '(bar matches buffer-info remote-host buffer-position parrot selection-info)
+   '(misc-info minor-modes checker input-method buffer-encoding major-mode process vcs "  "))
+ (setq doom-modeline-persp-name t)) ; <-- added padding here
 
 (use-package! treemacs
   :defer t
@@ -204,7 +209,11 @@
 (use-package! ace-window
   :defer t
   :init
-  (global-set-key [remap other-window] 'nil))
+  (global-set-key [remap other-window] 'nil)
+  :config
+  (custom-set-faces
+   '(aw-leading-char-face ((t (:foreground "red" :height 3.0)))))
+  (setq aw-background nil))
 
 (use-package! iedit
   :defer t
@@ -218,12 +227,14 @@
 
 (use-package! vterm ;; fix https://github.com/akermu/emacs-libvterm/issues/367
   :defer t
+  :init (+popup-mode)
   :bind
   (("M-o v" . (lambda()
                 (interactive)
                 (vterm)
+                (if (string-prefix-p "/Volumes/workplace" (buffer-file-name))
                 (vterm-send-string
-                 (concat "cd" (sreeni-get-package-dir (buffer-file-name))))))
+                 (concat "cd" (sreeni-get-package-dir (buffer-file-name)))))))
    ("M-o s" . (lambda()(interactive) (sreeni-vterm-exec-remote "")(vterm-send-C-l)))
    :map vterm-mode-map
    (("M-m" . nil)
@@ -237,9 +248,11 @@
 ;; (add-hook! '+popup-buffer-mode-hook
 ;;   (when (string-match-p "\\*vterm" (buffer-name))
 ;;     (set-window-parameter nil 'window-slot (string-to-number (substring (buffer-name) 6 -1)))))
-
-(add-hook! '+popup-create-window-hook
-  (window-preserve-size nil nil nil))
+(use-package! popup
+  :defer t
+  :config
+  (add-hook! '+popup-create-window-hook
+    (window-preserve-size nil nil nil)))
 
 (use-package! lsp
   :defer t
